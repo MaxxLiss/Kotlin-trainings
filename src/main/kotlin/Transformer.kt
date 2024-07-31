@@ -13,7 +13,7 @@ object Transformer {
         return collection
     }
 
-    inline fun <T, reified C : MutableCollection<T>, R> map(
+    inline fun <T, C : MutableCollection<T>, R> map(
         collection: C,
         transform: (T) -> R
     ) : List<R> {
