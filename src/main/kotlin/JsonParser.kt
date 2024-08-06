@@ -14,100 +14,81 @@ class User(
 )
 
 object Json {
-    private var sep: Int = 0
-    private lateinit var file: File
-
     fun writeToFile(toBeWritten: Any) {
         val fileName = toBeWritten::class.simpleName
-        file = File("$fileName.js")
+        val file = File("$fileName.json")
 
-        file.writeText("")
-
-        writeObject(toBeWritten)
+        file.writeText(writeObject(toBeWritten, 0))
     }
 
-    private fun writeObject(obj: Any?) {
+    private fun writeObject(obj: Any?, sep: Int): String {
+        var result = ""
+
         when (obj) {
-            null -> file.appendText("null")
-            is Boolean -> file.appendText(if (obj) "true" else "false")
-            is Number -> file.appendText("$obj")
-            is String -> writeString(obj)
+            null -> result = result.plus("null")
+            is Boolean -> result = result.plus(if (obj) "true" else "false")
+            is Number -> result = result.plus("$obj")
+            is String -> result = result.plus(writeString(obj))
             is Collection<*> -> {
-                file.appendText("[\n")
+                result = result.plus("[\n")
 
-                ++sep
                 for ((index, item) in obj.withIndex()) {
+                    result = result.plus(useSep(sep + 1))
 
-                    useSep()
-                    writeObject(item)
+                    result = result.plus(writeObject(item, sep + 1))
+
                     if (index != obj.size - 1) {
-                        file.appendText(",")
+                        result = result.plus(",")
                     }
-                    file.appendText("\n")
-
+                    result = result.plus("\n")
                 }
-                --sep
 
-                useSep()
-                file.appendText("]")
+                result = result.plus(useSep(sep))
+                result = result.plus("]")
             }
-            else -> writeClass(obj)
+            else -> result = result.plus(writeClass(obj, sep))
         }
+
+        return result
     }
 
-    private fun writeClass(cls: Any) {
-        file.appendText("{\n")
-
+    private fun writeClass(cls: Any, sep: Int): String {
+        var result = "{\n"
         val fields = cls::class.java.declaredFields
 
-        ++sep
         for ((index, field) in fields.withIndex()) {
             field.isAccessible = true
 
-            useSep()
-            writeString(field.name)
-            file.appendText(" : ")
+            result = result.plus(useSep(sep + 1))
 
-            writeObject(field.get(cls))
+            result = result.plus(writeString(field.name))
+            result = result.plus(" : ")
+
+            result = result.plus(writeObject(field.get(cls), sep + 1))
 
             if (index != fields.size - 1) {
-                file.appendText(",")
+                result = result.plus(",")
             }
-            file.appendText("\n")
+            result = result.plus("\n")
         }
-        --sep
 
-        useSep()
-        file.appendText("}")
+        result = result.plus(useSep(sep))
+        result = result.plus("}")
+
+        return result
     }
 
-    private fun writeString(string: String) {
-        file.appendText("\"$string\"")
+    private fun writeString(string: String): String {
+        return "\"$string\""
     }
 
-    private fun useSep() {
-        repeat(sep) {
-            file.appendText(" ")
-        }
-    }
-}
-
-fun foo(a: Any?) {
-    when (a) {
-        is String -> println("String")
-        is Number -> println("Number")
-        is Int -> println("Int")
-        null -> println("null")
+    private fun useSep(sep: Int): String {
+        return " ".repeat(sep)
     }
 }
 
 fun main() {
-    val a = A(1, 2)
-    val user = User("V", 19, a, listOf(1, "aba", 1.0, true, A(2, 3)))
-//    foo("a")
-//    foo(1.0)
-//    foo(1)
-//    foo(null)
+    val user = User("V", 19, A(1, 2), listOf(1, "aba", 1.0, true, A(2, 3)))
 
     Json.writeToFile(user)
 }
